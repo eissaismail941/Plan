@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8 Week Plan</title>
+    <style>
+        :root {
+            --bg: #f4f7f9;
+            --card-bg: #ffffff;
+            --primary: #007aff;
+            --success: #34c759;
+            --text-main: #1d1d1f;
+            --text-sec: #86868b;
+            /* Simple Light Blue Gradient */
+            --light-blue-gradient: linear-gradient(to right, #7abcff, #007aff);
+        }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { max-width: 800px; width: 100%; }
+
+        header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+
+        /* SIMPLE LIGHT BLUE GRADIENT TITLE */
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -1px;
+            background: var(--light-blue-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        header p {
+            margin-top: 5px;
+            color: var(--text-sec);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 18px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); display: block; }
+        .stat-label { font-size: 0.7rem; color: var(--text-sec); text-transform: uppercase; }
+
+        .progress-section {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .progress-container {
+            height: 12px;
+            background: #eee;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--light-blue-gradient);
+            transition: width 0.4s ease;
+        }
+
+        .lecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .box {
+            aspect-ratio: 1;
+            border: 1.5px solid #d1d1d6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-sec);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .box.done {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+            box-shadow: 0 2px 6px rgba(52, 199, 89, 0.4);
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            background: none;
+            border: none;
+            color: #ff3b30;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>3 - 2 lectures per day</h1>
+            <p>Plan for 8 Weeks</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value" id="count-done">0</span>
+                <span class="stat-label">Done</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="count-left">112</span>
+                <span class="stat-label">Remaining</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="percent-val">0%</span>
+                <span class="stat-label">Complete</span>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="lecture-grid" id="grid"></div>
+        
+        <center>
+            <button class="reset-btn" onclick="resetProgress()">Reset All Progress</button>
+        </center>
+    </div>
+
+    <script>
+        const totalLectures = 112;
+        const grid = document.getElementById('grid');
+        
+        let completed = JSON.parse(localStorage.getItem('medical_progress')) || [];
+
+        function updateUI() {
+            const doneCount = completed.length;
+            const percentage = Math.round((doneCount / totalLectures) * 100);
+            
+            document.getElementById('count-done').innerText = doneCount;
+            document.getElementById('count-left').innerText = totalLectures - doneCount;
+            document.getElementById('percent-val').innerText = percentage + "%";
+            document.getElementById('progress-bar').style.width = percentage + "%";
+            
+            localStorage.setItem('medical_progress', JSON.stringify(completed));
+        }
+
+        function toggleLecture(id) {
+            if (completed.includes(id)) {
+                completed = completed.filter(item => item !== id);
+            } else {
+                completed.push(id);
+            }
+            document.getElementById('box-' + id).classList.toggle('done');
+            updateUI();
+        }
+
+        function resetProgress() {
+            if(confirm("Are you sure you want to clear all progress?")) {
+                completed = [];
+                const boxes = document.querySelectorAll('.box');
+                boxes.forEach(box => box.classList.remove('done'));
+                updateUI();
+            }
+        }
+
+        for (let i = 1; i <= totalLectures; i++) {
+            const box = document.createElement('div');
+            box.id = 'box-' + i;
+            box.className = 'box';
+            if (completed.includes(i)) box.classList.add('done');
+            box.innerText = i;
+            box.onclick = () => toggleLecture(i);
+            grid.appendChild(box);
+        }
+
+        updateUI();
+    </script>
+
+</body>
+</html>
+
