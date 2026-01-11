@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8 Week Plan</title>
+    <title>Study Tracker</title>
     <style>
         :root {
             --bg: #f4f7f9;
@@ -12,7 +12,6 @@
             --success: #34c759;
             --text-main: #1d1d1f;
             --text-sec: #86868b;
-            /* Simple Light Blue Gradient */
             --light-blue-gradient: linear-gradient(to right, #7abcff, #007aff);
         }
 
@@ -29,35 +28,31 @@
 
         .container { max-width: 800px; width: 100%; }
 
-        header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-        }
-
-        /* SIMPLE LIGHT BLUE GRADIENT TITLE */
+        header { text-align: center; margin-bottom: 20px; }
         header h1 {
             font-size: 2.2rem;
             font-weight: 800;
             margin: 0;
-            letter-spacing: -1px;
             background: var(--light-blue-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: inline-block;
         }
 
-        header p {
-            margin-top: 5px;
-            color: var(--text-sec);
+        #active-lecture-title {
+            text-align: center;
             font-weight: 600;
-            font-size: 0.9rem;
+            color: var(--primary);
+            height: 1.5em;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .stat-card {
@@ -75,7 +70,7 @@
             background: var(--card-bg);
             padding: 20px;
             border-radius: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
@@ -83,7 +78,7 @@
             height: 12px;
             background: #eee;
             border-radius: 10px;
-            margin: 15px 0;
+            margin: 5px 0;
             overflow: hidden;
         }
 
@@ -96,8 +91,8 @@
 
         .lecture-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+            gap: 12px;
             background: var(--card-bg);
             padding: 20px;
             border-radius: 20px;
@@ -105,34 +100,62 @@
         }
 
         .box {
+            position: relative;
             aspect-ratio: 1;
             border: 1.5px solid #d1d1d6;
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.9rem;
+            font-weight: 700;
             color: var(--text-sec);
             cursor: pointer;
             transition: all 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .box.done {
             background: var(--success);
             border-color: var(--success);
             color: white;
-            box-shadow: 0 2px 6px rgba(52, 199, 89, 0.4);
+            box-shadow: 0 2px 8px rgba(52, 199, 89, 0.4);
+        }
+
+        .box::after {
+            content: attr(data-name);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .box:hover::after {
+            opacity: 1;
+            visibility: visible;
         }
 
         .reset-btn {
-            margin-top: 20px;
+            margin-top: 40px;
             background: none;
             border: none;
             color: #ff3b30;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-decoration: underline;
+            opacity: 0.4;
         }
     </style>
 </head>
@@ -140,9 +163,10 @@
 
     <div class="container">
         <header>
-            <h1>3 - 2 lectures per day</h1>
-            <p>Plan for 8 Weeks</p>
+            <h1>Study Tracker</h1>
         </header>
+        
+        <div id="active-lecture-title"></div>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -151,11 +175,11 @@
             </div>
             <div class="stat-card">
                 <span class="stat-value" id="count-left">112</span>
-                <span class="stat-label">Remaining</span>
+                <span class="stat-label">Left</span>
             </div>
             <div class="stat-card">
                 <span class="stat-value" id="percent-val">0%</span>
-                <span class="stat-label">Complete</span>
+                <span class="stat-label">Progress</span>
             </div>
         </div>
 
@@ -168,29 +192,47 @@
         <div class="lecture-grid" id="grid"></div>
         
         <center>
-            <button class="reset-btn" onclick="resetProgress()">Reset All Progress</button>
+            <button class="reset-btn" onclick="resetAll()">Reset All</button>
         </center>
     </div>
 
     <script>
         const totalLectures = 112;
         const grid = document.getElementById('grid');
+        const titleDisplay = document.getElementById('active-lecture-title');
         
-        let completed = JSON.parse(localStorage.getItem('medical_progress')) || [];
+        let completed = JSON.parse(localStorage.getItem('study_done')) || [];
+        let customNames = JSON.parse(localStorage.getItem('study_names')) || {};
 
         function updateUI() {
             const doneCount = completed.length;
             const percentage = Math.round((doneCount / totalLectures) * 100);
-            
             document.getElementById('count-done').innerText = doneCount;
             document.getElementById('count-left').innerText = totalLectures - doneCount;
             document.getElementById('percent-val').innerText = percentage + "%";
             document.getElementById('progress-bar').style.width = percentage + "%";
             
-            localStorage.setItem('medical_progress', JSON.stringify(completed));
+            localStorage.setItem('study_done', JSON.stringify(completed));
+            localStorage.setItem('study_names', JSON.stringify(customNames));
+        }
+
+        function handleRename(id) {
+            const oldName = customNames[id] || "Lecture " + id;
+            const newName = prompt("Rename Lecture " + id + ":", oldName);
+            
+            if (newName !== null && newName.trim() !== "") {
+                customNames[id] = newName.trim();
+                const box = document.getElementById('box-' + id);
+                box.setAttribute('data-name', newName.trim());
+                titleDisplay.innerText = newName.trim();
+                updateUI();
+            }
         }
 
         function toggleLecture(id) {
+            const name = customNames[id] || "Lecture " + id;
+            titleDisplay.innerText = name;
+
             if (completed.includes(id)) {
                 completed = completed.filter(item => item !== id);
             } else {
@@ -200,12 +242,10 @@
             updateUI();
         }
 
-        function resetProgress() {
-            if(confirm("Are you sure you want to clear all progress?")) {
-                completed = [];
-                const boxes = document.querySelectorAll('.box');
-                boxes.forEach(box => box.classList.remove('done'));
-                updateUI();
+        function resetAll() {
+            if(confirm("Clear everything?")) {
+                localStorage.clear();
+                location.reload();
             }
         }
 
@@ -213,15 +253,19 @@
             const box = document.createElement('div');
             box.id = 'box-' + i;
             box.className = 'box';
+            
+            const name = customNames[i] || "Lecture " + i;
+            box.setAttribute('data-name', name);
             if (completed.includes(i)) box.classList.add('done');
+            
             box.innerText = i;
             box.onclick = () => toggleLecture(i);
+            box.oncontextmenu = (e) => { e.preventDefault(); handleRename(i); };
+            
             grid.appendChild(box);
         }
 
         updateUI();
     </script>
-
 </body>
 </html>
-
